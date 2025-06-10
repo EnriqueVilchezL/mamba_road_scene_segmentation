@@ -1,0 +1,14 @@
+[project]
+name = "mamba-road-scene-segmentation"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pillow>=11.2.1",
+    "pytorch-lightning>=2.5.1.post0",
+    "torch>=2.7.1",
+    "torchmetrics>=1.7.2",
+    "torchvision>=0.22.1",
+    "wandb>=0.20.1",
+]
