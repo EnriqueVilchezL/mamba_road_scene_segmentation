@@ -18,6 +18,10 @@ UNET_RESULTS_PATH = "results/unet"
 UNET_FILENAME = "unet_model.pth"
 UNET_CHECKPOINT_PATH = f"{UNET_RESULTS_PATH}/checkpoints"
 
+SWIN_RESULTS_PATH = "results/swin_unet"
+SWIN_UNET_FILENAME = "swin_unet_model.pth"
+SWIN_UNET_CHECKPOINT_PATH = f"{SWIN_RESULTS_PATH}/checkpoints"
+
 COLOR_MAP = {
     (70, 130, 180): 0,  # sky
     (70, 70, 70): 1,  # building
