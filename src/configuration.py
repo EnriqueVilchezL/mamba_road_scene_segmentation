@@ -22,6 +22,10 @@ SWIN_RESULTS_PATH = "results/swin_unet"
 SWIN_UNET_FILENAME = "swin_unet_model.pth"
 SWIN_UNET_CHECKPOINT_PATH = f"{SWIN_RESULTS_PATH}/checkpoints"
 
+MAMBA_UNET_RESULTS_PATH = "results/mamba_unet"
+MAMBA_UNET_FILENAME = "mamba_unet_model.pth"
+MAMBA_UNET_CHECKPOINT_PATH = f"{MAMBA_UNET_RESULTS_PATH}/checkpoints"
+
 COLOR_MAP = {
     (70, 130, 180): 0,  # sky
     (70, 70, 70): 1,  # building
