@@ -6,6 +6,7 @@ import wandb
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from data_loader import class_to_rgb
 
 class SegmentationModel(pl.LightningModule):
     def __init__(
@@ -91,7 +92,7 @@ class SegmentationModel(pl.LightningModule):
         return heatmap
 
 
-    def log_saliency_maps(self, model, input_image, saliency_fn, class_names=None, cmap="inferno", logger=None, step=None):
+    def log_saliency_maps(self, model, mask, input_image, saliency_fn, class_names=None, cmap="inferno", logger=None, step=None):
         """
         Logs input image and saliency maps per class to Weights & Biases.
         
@@ -115,19 +116,28 @@ class SegmentationModel(pl.LightningModule):
         input_np = (input_np - input_np.min()) / (input_np.max() - input_np.min() + 1e-8)
 
         saliency_images = []
+        
 
         for cls in range(num_classes):
-            sal_map = saliency_fn(model, input_image, cls)  # expected: [H, W] numpy
+            binary_mask = (mask == cls)
 
-            heatmap = self.apply_colormap(sal_map, cmap=cmap)
+            sal_map = saliency_fn(model, input_image, mask=binary_mask, target_class=cls)  # expected: [H, W] numpy
+
+            # Overlay on original image
+            overlay = input_np.copy()
+            heatmap = plt.get_cmap(cmap)(sal_map)[:, :, :3]  # RGB heatmap (no alpha)
+            overlay = 0.3 * overlay + 0.7 * heatmap  # Blend original and saliency
+
+            overlay = np.clip(overlay, 0, 1)
             label = class_names[cls] if class_names else f"Class {cls}"
+            saliency_images.append(wandb.Image(overlay, caption=f"Saliency map overlayed: {label}"))
 
-            saliency_images.append(wandb.Image(heatmap, caption=label))
-
+        print(output.argmax(dim=1).shape)
         logger.experiment.log({
             "Input Image": wandb.Image(input_np, caption="Input Image"),
+            "Output Image": wandb.Image(class_to_rgb(output.argmax(dim=1)[0].detach().cpu().numpy()), caption="Output Image"),
             "Saliency Maps": saliency_images,
-            "step": step
+            "epoch": step
         })
 
     def log_feature_ablation_maps(
@@ -178,7 +188,7 @@ class SegmentationModel(pl.LightningModule):
         logger.experiment.log({
             "Input Image (Ablation)": wandb.Image(input_np, caption="Input Image"),
             "Feature Ablation Maps": ablation_images,
-            "step": step
+            "epoch": step
         })
 
     def on_validation_epoch_end(self):
@@ -193,12 +203,13 @@ class SegmentationModel(pl.LightningModule):
             x, y = sample_batch
 
             input_image = x[15:16].to(self.device)
-
+            mask = y[15:16].to(self.device)
             # Create mask from ground truth y (one-hot or probs)
             # mask = y[0].argmax(dim=0, keepdim=True).to(self.device)  # [1, H, W]
 
             self.log_saliency_maps(
                 model=self.model,
+                mask=mask,
                 input_image=input_image,
                 saliency_fn=get_segmentation_saliency,
                 class_names=self.class_names,

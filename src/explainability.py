@@ -1,6 +1,6 @@
 from captum.attr import Saliency, FeatureAblation
 import torch
-def get_segmentation_saliency(model, image, target_class):
+def get_segmentation_saliency(model, image, mask, target_class):
     """
     Compute saliency map for a given image and target_class in a segmentation model.
 
@@ -17,7 +17,8 @@ def get_segmentation_saliency(model, image, target_class):
     def forward_fn(x):
         out = model(x)  # [1, C, H, W]
         # Sum pixel-logits for the target class
-        return out[:, target_class, :, :].sum(dim=(1, 2))
+        logits = out[:, target_class, :, :]
+        return (logits * mask).sum(dim=(1, 2))
 
     saliency = Saliency(forward_fn)
     attributions = saliency.attribute(image)  # [1, C, H, W]
