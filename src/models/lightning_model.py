@@ -241,7 +241,7 @@ class SegmentationModel(pl.LightningModule):
                     # Build wandb.Table
                     table = wandb.Table(columns=["Class", metric_name])
                     for i, val in enumerate(metric_tensor):
-                        table.add_data(f"Class {i}", val.item())
+                        table.add_data(self.class_names[i], val.item())
 
                     wandb.log({
                         f"{metric_name}": wandb.plot.bar(
