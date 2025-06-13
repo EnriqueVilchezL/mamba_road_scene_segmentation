@@ -76,9 +76,9 @@ class SegmentationTransform:
             [
                 transforms.Resize(image_size),
                 transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
+                # transforms.Normalize(
+                #     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                # ),
             ]
         )
         self.mask_resize = transforms.Resize(image_size, interpolation=Image.NEAREST)
@@ -135,9 +135,10 @@ class SegmentationDataModule(LightningDataModule):
         )
 
     def test_dataloader(self):
-        return DataLoader(
-            self.test_dataset,
-            batch_size=self.batch_size,
-            # num_workers=self.num_workers,
-            # persistent_workers=True,
-        )
+        return self.val_dataloader()
+        # return DataLoader(
+        #     self.test_dataset,
+        #     batch_size=self.batch_size,
+        #     # num_workers=self.num_workers,
+        #     # persistent_workers=True,
+        # )

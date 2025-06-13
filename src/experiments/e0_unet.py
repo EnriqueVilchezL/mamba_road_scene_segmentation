@@ -26,11 +26,13 @@ def main():
     from models.unet import UNet
     from models.lightning_model import SegmentationModel
 
-    from utils import get_device
+    from utils import get_device, set_seed
     import configuration as config
+    import wandb
 
     # Get the available device
     device = get_device()
+    set_seed()
 
     # Get the training and validation datasets
     datamodule = SegmentationDataModule(
@@ -38,7 +40,7 @@ def main():
         data_path=config.DATA_PATH,
         num_classes=config.NUM_CLASSES,
         transform=SegmentationTransform(
-            image_size=config.IMAGE_SIZE
+            image_size=config.UNET_IMAGE_SIZE
         ),
         num_workers=config.NUM_WORKERS,
     )
@@ -47,10 +49,23 @@ def main():
     metrics = MetricCollection(
         {
             "Accuracy": MulticlassAccuracy(
+                num_classes=config.NUM_CLASSES, average="micro"
+            ),
+            "BalancedAccuracy": MulticlassAccuracy(
                 num_classes=config.NUM_CLASSES, average="macro"
             ),
             "IoU": MulticlassJaccardIndex(
                 num_classes=config.NUM_CLASSES, average="macro"
+            ),
+        }
+    )
+    vectorized_metrics = MetricCollection(
+        {
+            "PerClassAccuracy": MulticlassAccuracy(
+                num_classes=config.NUM_CLASSES, average="none"
+            ),
+            "PerClassIoU": MulticlassJaccardIndex(
+                num_classes=config.NUM_CLASSES, average="none"
             ),
         }
     )
@@ -59,7 +74,9 @@ def main():
     model = SegmentationModel(
         model=unet,
         lr=1e-3,
+        class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
         loss_fn=nn.CrossEntropyLoss(),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
@@ -80,7 +97,7 @@ def main():
         mode="min",
     )
 
-    id = config.UNET_FILENAME.split(".")[0]
+    id = config.UNET_FILENAME.split(".")[0] + "_" + wandb.util.generate_id()
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
@@ -90,6 +107,7 @@ def main():
         log_every_n_steps=1,
     )
     trainer.fit(model, datamodule=datamodule)
+    # trainer.test(model, datamodule=datamodule)
 
 
 if __name__ == "__main__":

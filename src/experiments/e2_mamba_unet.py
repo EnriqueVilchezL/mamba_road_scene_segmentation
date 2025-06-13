@@ -28,6 +28,7 @@ def main():
 
     from utils import get_device
     import configuration as config
+    import wandb
 
     # Get the available device
     device = get_device()
@@ -38,7 +39,7 @@ def main():
         data_path=config.DATA_PATH,
         num_classes=config.NUM_CLASSES,
         transform=SegmentationTransform(
-            image_size=(224, 224)  # SwinUnet expects 224x224 input size
+            image_size=config.MAMBA_IMAGE_SIZE
         ),
         num_workers=config.NUM_WORKERS,
     )
@@ -54,12 +55,27 @@ def main():
             ),
         }
     )
+    vectorized_metrics = MetricCollection(
+        {
+            "Accuracy": MulticlassAccuracy(
+                num_classes=config.NUM_CLASSES, average="micro"
+            ),
+            "BalancedAccuracy": MulticlassAccuracy(
+                num_classes=config.NUM_CLASSES, average="macro"
+            ),
+            "IoU": MulticlassJaccardIndex(
+                num_classes=config.NUM_CLASSES, average="macro"
+            ),
+        }
+    )
 
-    mamba = MambaUnet(img_size=224, num_classes=config.NUM_CLASSES)
+    mamba = MambaUnet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model = SegmentationModel(
         model=mamba,
         lr=1e-3,
+        class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
         loss_fn=nn.CrossEntropyLoss(),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
@@ -80,7 +96,7 @@ def main():
         mode="min",
     )
 
-    id = config.MAMBA_UNET_FILENAME.split(".")[0]
+    id = config.MAMBA_UNET_FILENAME.split(".")[0] + "_" + wandb.util.generate_id()
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
