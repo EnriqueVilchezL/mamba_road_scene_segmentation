@@ -1,15 +1,15 @@
-NUM_CLASSES = 12
+NUM_CLASSES = 20
 DATA_PATH = "data"
-BATCH_SIZE = 16
+BATCH_SIZE = 100
 
 PATIENCE = 3
 LR = 0.0003
 SCHEDULER_MAX_IT = 30
 WEIGH_DECAY = 1e-4
 EPSILON = 1e-4
-EPOCHS = 40
+EPOCHS = 50
 TOP_K_SAVES = 1
-NUM_WORKERS = 1
+NUM_WORKERS = 71
 
 WANDB_PROJECT = "mamba_road_scene_segmentation"
 
@@ -29,31 +29,47 @@ MAMBA_UNET_FILENAME = "mamba_unet_model.pth"
 MAMBA_UNET_CHECKPOINT_PATH = f"{MAMBA_UNET_RESULTS_PATH}/checkpoints"
 
 COLOR_MAP = {
-    (70, 130, 180): 0,  # sky
-    (70, 70, 70): 1,  # building
-    (153, 153, 153): 2,  # pole
-    (128, 64, 128): 3,  # road
-    (244, 35, 232): 4,  # pavement
-    (107, 142, 35): 5,  # tree
-    (220, 220, 0): 6,  # signsymbol
-    (190, 153, 153): 7,  # fence
-    (0, 0, 142): 8,  # car
-    (220, 20, 60): 9,  # pedestrian
-    (0, 0, 230): 10,  # bicyclist
-    (0, 0, 0): 11,  # unlabelled / background
+    (128, 64, 128): 0,    # road
+    (244, 35, 232): 1,    # sidewalk
+    (70, 70, 70): 2,      # building
+    (102, 102, 156): 3,   # wall
+    (190, 153, 153): 4,   # fence
+    (153, 153, 153): 5,   # pole    
+    (250, 170, 30): 6,    # traffic light
+    (220, 220, 0): 7,     # traffic sign
+    (107, 142, 35): 8,    # vegetation
+    (152, 251, 152): 9,   # terrain
+    (70, 130, 180): 10,   # sky
+    (220, 20, 60): 11,    # person
+    (255, 0, 0): 12,      # rider
+    (0, 0, 142): 13,      # car
+    (0, 0, 70): 14,       # truck
+    (0, 60, 100): 15,     # bus
+    (0, 80, 100): 16,     # train
+    (0, 0, 230): 17,      # motorcycle
+    (119, 11, 32): 18,    # bicycle
+    (0, 0, 0): 19,       # unknown / background
 }
 
 LABEL_MAP = {
-    0: "sky",
-    1: "building",
-    2: "pole",
-    3: "road",
-    4: "pavement",
-    5: "tree",
-    6: "signsymbol",
-    7: "fence",
-    8: "car",
-    9: "pedestrian",
-    10: "bicyclist",
-    11: "unlabelled / background",
+    0: "road",
+    1: "sidewalk",
+    2: "building",
+    3: "wall",
+    4: "fence",
+    5: "pole",
+    6: "traffic light",
+    7: "traffic sign",
+    8: "vegetation",
+    9: "terrain",
+    10: "sky",
+    11: "person",
+    12: "rider",
+    13: "car",
+    14: "truck",
+    15: "bus",
+    16: "train",
+    17: "motorcycle",
+    18: "bicycle",
+    19: "unknown",
 }

@@ -27,6 +27,7 @@ def main():
     from models.lightning_model import SegmentationModel
 
     from utils import get_device, set_seed
+    from loss import CombinedLoss
     import configuration as config
     import wandb
 
@@ -73,11 +74,11 @@ def main():
     unet = UNet(in_channels=3, num_classes=config.NUM_CLASSES)
     model = SegmentationModel(
         model=unet,
-        lr=1e-3,
+        lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
-        loss_fn=nn.CrossEntropyLoss(),
+        loss_fn=CombinedLoss(),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
 

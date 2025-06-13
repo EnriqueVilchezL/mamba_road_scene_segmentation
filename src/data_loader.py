@@ -10,12 +10,24 @@ from configuration import COLOR_MAP
 
 
 def rgb_to_class(mask):
-    """Converts a 3-channel RGB mask to a single-channel class index mask."""
+    """Converts a 3-channel RGB mask to a class index mask using nearest RGB match."""
     mask_np = np.array(mask)
-    class_mask = np.zeros((mask_np.shape[0], mask_np.shape[1]), dtype=np.int64)
-    for rgb, idx in COLOR_MAP.items():
-        matches = np.all(mask_np == rgb, axis=-1)
-        class_mask[matches] = idx
+    h, w, _ = mask_np.shape
+    class_mask = np.zeros((h, w), dtype=np.int64)
+
+    color_keys = np.array(list(COLOR_MAP.keys()))  # Shape: [N_classes, 3]
+    color_vals = np.array(list(COLOR_MAP.values()))  # Shape: [N_classes]
+
+    # Reshape mask to [H*W, 3]
+    flat_mask = mask_np.reshape(-1, 3)
+
+    # Compute L2 distances between each pixel and known class RGBs
+    dists = np.linalg.norm(flat_mask[:, None, :] - color_keys[None, :, :], axis=2)  # Shape: [H*W, N_classes]
+
+    # Find nearest color
+    nearest_color_indices = np.argmin(dists, axis=1)
+    class_mask = color_vals[nearest_color_indices].reshape(h, w)
+
     return class_mask
 
 
@@ -123,15 +135,15 @@ class SegmentationDataModule(LightningDataModule):
         )
 
     def train_dataloader(self):
-        return self.val_dataloader()
-        # return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        #return self.val_dataloader()
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, persistent_workers=True)
 
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
             batch_size=self.batch_size,
-            # num_workers=self.num_workers,
-            # persistent_workers=True,
+            num_workers=self.num_workers,
+            persistent_workers=True,
         )
 
     def test_dataloader(self):

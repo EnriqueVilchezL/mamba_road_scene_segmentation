@@ -119,7 +119,7 @@ class SegmentationModel(pl.LightningModule):
         
 
         for cls in range(num_classes):
-            binary_mask = (mask == cls)
+            binary_mask = (output.argmax(dim=1) == cls)
 
             sal_map = saliency_fn(model, input_image, mask=binary_mask, target_class=cls)  # expected: [H, W] numpy
 
@@ -132,9 +132,9 @@ class SegmentationModel(pl.LightningModule):
             label = class_names[cls] if class_names else f"Class {cls}"
             saliency_images.append(wandb.Image(overlay, caption=f"Saliency map overlayed: {label}"))
 
-        print(output.argmax(dim=1).shape)
+        print(mask.shape)
         logger.experiment.log({
-            "Input Image": wandb.Image(input_np, caption="Input Image"),
+            "Input Image": [wandb.Image(input_np, caption="Input Image"), wandb.Image(class_to_rgb(mask.permute(1, 2, 0).squeeze(-1).detach().cpu().numpy()), caption="Mask")],
             "Output Image": wandb.Image(class_to_rgb(output.argmax(dim=1)[0].detach().cpu().numpy()), caption="Output Image"),
             "Saliency Maps": saliency_images,
             "epoch": step

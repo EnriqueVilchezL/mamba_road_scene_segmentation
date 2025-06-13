@@ -72,7 +72,7 @@ def main():
     mamba = MambaUnet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model = SegmentationModel(
         model=mamba,
-        lr=1e-3,
+        lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
