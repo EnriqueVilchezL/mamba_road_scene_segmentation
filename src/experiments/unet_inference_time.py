@@ -24,18 +24,18 @@ def main():
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
     from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
-    from models.mamba_unet import MambaUnet
+    from models.unet import UNet
     from models.lightning_model import SegmentationModel
 
-    from utils import get_device, set_seed
+    from utils import get_device
     from loss import CombinedLoss, SymmetricUnifiedFocalLoss
     import configuration as config
-    import torch
     import wandb
+
+    import time
 
     # Get the available device
     device = get_device()
-    set_seed()
 
     # Get the training and validation datasets
     datamodule = SegmentationDataModule(
@@ -76,44 +76,32 @@ def main():
         }
     )
 
-    mamba = MambaUnet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
-    model = SegmentationModel(
-        model=mamba,
+    unet = UNet(in_channels=3, num_classes=config.NUM_CLASSES)
+    model = SegmentationModel.load_from_checkpoint(
+        "results/unet/checkpoints/unet_model.pth.ckpt",
+        model=unet,
         lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
-        loss_fn=SymmetricUnifiedFocalLoss(epochs=config.EPOCHS),
+        loss_fn=CombinedLoss(epochs=config.EPOCHS),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
 
-    early_stop_callback = EarlyStopping(
-        monitor="val/loss",
-        patience=config.PATIENCE,
-        strict=False,
-        verbose=False,
-        mode="min",
-    )
+    model.to(torch.device(device))
+    data_loader = datamodule.val_dataloader()
 
-    checkpoint_callback = ModelCheckpoint(
-        monitor="val/loss",
-        dirpath=config.MAMBA_UNET_CHECKPOINT_PATH,
-        filename=config.MAMBA_UNET_FILENAME,
-        save_top_k=config.TOP_K_SAVES,
-        mode="min",
-    )
+    count = 0
+    for image, mask in data_loader:
+        if count == 0:
+            image = image.to(torch.device(device))
+            start = time.time()
+            output = model.model(image)
+            end = time.time()
+            print("Elapsed time:", end - start, "seconds")
+            break
 
-    id = "mamba_unet_model_ufl_200"
-    wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
-    trainer = Trainer(
-        logger=wandb_logger,
-        max_epochs=config.EPOCHS,
-        accelerator=device,
-        callbacks=[checkpoint_callback, early_stop_callback],
-        log_every_n_steps=1,
-    )
-    trainer.fit(model, datamodule=datamodule)
-    trainer.test(model, datamodule=datamodule)
+
 
 
 if __name__ == "__main__":

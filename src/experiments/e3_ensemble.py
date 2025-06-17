@@ -25,17 +25,17 @@ def main():
 
     from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
     from models.mamba_unet import MambaUnet
-    from models.lightning_model import SegmentationModel
+    from models.swin_unet import SwinUnet
+    from models.unet import UNet
+    from models.lightning_model import SegmentationModel, EnsembleSegmentationModel
 
-    from utils import get_device, set_seed
+    from utils import get_device
     from loss import CombinedLoss, SymmetricUnifiedFocalLoss
     import configuration as config
-    import torch
     import wandb
 
     # Get the available device
     device = get_device()
-    set_seed()
 
     # Get the training and validation datasets
     datamodule = SegmentationDataModule(
@@ -77,43 +77,60 @@ def main():
     )
 
     mamba = MambaUnet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
-    model = SegmentationModel(
+    model_mamba = SegmentationModel.load_from_checkpoint(
+        "results/mamba_unet/checkpoints/mamba_unet_model.pth.ckpt",
         model=mamba,
         lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
-        loss_fn=SymmetricUnifiedFocalLoss(epochs=config.EPOCHS),
+        loss_fn=CombinedLoss(epochs=config.EPOCHS),
+        scheduler_max_it=config.SCHEDULER_MAX_IT,
+    ).to(torch.device(device))
+
+    swin = SwinUnet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    model_swin = SegmentationModel.load_from_checkpoint(
+        "results/swin_unet/swin_unet_model.pth.ckpt",
+        model=swin,
+        lr=config.LR,
+        class_names=list(config.LABEL_MAP.values()),
+        metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
+        loss_fn=CombinedLoss(epochs=config.EPOCHS),
+        scheduler_max_it=config.SCHEDULER_MAX_IT,
+    ).to(torch.device(device))
+
+    unet = UNet(in_channels=3, num_classes=config.NUM_CLASSES)
+    model_unet = SegmentationModel.load_from_checkpoint(
+        "results/unet/checkpoints/unet_model.pth.ckpt",
+        model=unet,
+        lr=config.LR,
+        class_names=list(config.LABEL_MAP.values()),
+        metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
+        loss_fn=CombinedLoss(epochs=config.EPOCHS),
+        scheduler_max_it=config.SCHEDULER_MAX_IT,
+    ).to(torch.device(device))
+
+    ensemble = EnsembleSegmentationModel(
+        models=[model_swin, model_mamba],
+        lr=config.LR,
+        class_names=list(config.LABEL_MAP.values()),
+        metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
+        loss_fn=CombinedLoss(epochs=config.EPOCHS),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
 
-    early_stop_callback = EarlyStopping(
-        monitor="val/loss",
-        patience=config.PATIENCE,
-        strict=False,
-        verbose=False,
-        mode="min",
-    )
-
-    checkpoint_callback = ModelCheckpoint(
-        monitor="val/loss",
-        dirpath=config.MAMBA_UNET_CHECKPOINT_PATH,
-        filename=config.MAMBA_UNET_FILENAME,
-        save_top_k=config.TOP_K_SAVES,
-        mode="min",
-    )
-
-    id = "mamba_unet_model_ufl_200"
+    id = "ensemble_swin_mamba"
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
         max_epochs=config.EPOCHS,
         accelerator=device,
-        callbacks=[checkpoint_callback, early_stop_callback],
         log_every_n_steps=1,
     )
-    trainer.fit(model, datamodule=datamodule)
-    trainer.test(model, datamodule=datamodule)
+    trainer.test(ensemble, datamodule=datamodule)
 
 
 if __name__ == "__main__":

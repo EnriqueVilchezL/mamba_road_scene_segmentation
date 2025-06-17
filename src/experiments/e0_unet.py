@@ -16,18 +16,19 @@ def main():
             sys.path.insert(0, path)
 
     import torch.nn as nn
+    import torch
     from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
     from pytorch_lightning.loggers import WandbLogger
     from pytorch_lightning import Trainer
     from torchmetrics import MetricCollection
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
-    from data_loader import SegmentationDataModule, SegmentationTransform
+    from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
     from models.unet import UNet
     from models.lightning_model import SegmentationModel
 
     from utils import get_device, set_seed
-    from loss import CombinedLoss
+    from loss import CombinedLoss, SymmetricUnifiedFocalLoss
     import configuration as config
     import wandb
 
@@ -40,7 +41,10 @@ def main():
         batch_size=config.BATCH_SIZE,
         data_path=config.DATA_PATH,
         num_classes=config.NUM_CLASSES,
-        transform=SegmentationTransform(
+        train_transform=SegmentationTrainTransform(
+            image_size=config.UNET_IMAGE_SIZE
+        ),
+        test_transform=SegmentationTestTransform(
             image_size=config.UNET_IMAGE_SIZE
         ),
         num_workers=config.NUM_WORKERS,
@@ -78,10 +82,11 @@ def main():
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
-        loss_fn=CombinedLoss(),
+        loss_fn=SymmetricUnifiedFocalLoss(epochs=config.EPOCHS),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
 
+    # class_weights=datamodule.get_class_weights_preprocessed().to(torch.device(device))
     early_stop_callback = EarlyStopping(
         monitor="val/loss",
         patience=config.PATIENCE,
@@ -98,7 +103,7 @@ def main():
         mode="min",
     )
 
-    id = config.UNET_FILENAME.split(".")[0] + "_" + wandb.util.generate_id()
+    id = "unet_model_ufl_200"
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
@@ -108,7 +113,7 @@ def main():
         log_every_n_steps=1,
     )
     trainer.fit(model, datamodule=datamodule)
-    # trainer.test(model, datamodule=datamodule)
+    trainer.test(model, datamodule=datamodule)
 
 
 if __name__ == "__main__":

@@ -858,12 +858,12 @@ class VSSM(nn.Module):
 logger = logging.getLogger(__name__)
 
 class MambaUnet(nn.Module):
-    def __init__(self, img_size=224, num_classes=21843, zero_head=False, vis=False):
+    def __init__(self, img_size=224, num_classes=21843, in_channels=3, zero_head=False, vis=False):
         super(MambaUnet, self).__init__()
         self.num_classes = num_classes
         self.zero_head = zero_head
 
-        self.mamba_unet =  VSSM(num_classes=num_classes)
+        self.mamba_unet = VSSM(num_classes=num_classes, in_chans=in_channels)
 
     def forward(self, x):
         if x.size()[1] == 1:
