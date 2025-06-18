@@ -24,7 +24,7 @@ def main():
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
     from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
-    from models.mamba_unet import MambaUnet
+    from models.mamba_unet import MambaUNet
     from models.lightning_model import SegmentationModel
 
     from utils import get_device, set_seed
@@ -76,14 +76,14 @@ def main():
         }
     )
 
-    mamba = MambaUnet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    mamba = MambaUNet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model = SegmentationModel(
         model=mamba,
         lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
-        loss_fn=SymmetricUnifiedFocalLoss(epochs=config.EPOCHS),
+        loss_fn=SymmetricUnifiedFocalLoss(),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
 
@@ -103,7 +103,7 @@ def main():
         mode="min",
     )
 
-    id = "mamba_unet_model_ufl_200"
+    id = "mamba_unet_ufl_1000"
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
@@ -113,6 +113,19 @@ def main():
         log_every_n_steps=1,
     )
     trainer.fit(model, datamodule=datamodule)
+
+    # Test
+    mamba = MambaUNet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    model = SegmentationModel.load_from_checkpoint(
+        config.MAMBA_UNET_CHECKPOINT_PATH + "/" + config.MAMBA_UNET_FILENAME,
+        model=mamba,
+        lr=config.LR,
+        class_names=list(config.LABEL_MAP.values()),
+        metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
+        loss_fn=SymmetricUnifiedFocalLoss(),
+        scheduler_max_it=config.SCHEDULER_MAX_IT,
+    )
     trainer.test(model, datamodule=datamodule)
 
 

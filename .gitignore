@@ -196,6 +196,5 @@ cython_debug/
 data/
 results/
 wandb/
-*.yml
 *.sh
 *.out

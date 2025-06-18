@@ -83,14 +83,15 @@ All required libraries, including PyTorch, and model-specific dependencies, are 
 
 ## 📈 Training Details
 
-- Optimizer: AdamW  
-- Scheduler: CosineAnnealingLR  
-- Loss Function: Unified Focal Loss (to handle class imbalance)  
-- Epochs: 100
-- Initial Learning Rate: 3e-4 (decayed with cosine schedule)  
-- Batch Size: 24
 
-The specifics of the training for each model is detailed in [training.md](training.md)
+We used **Weights & Biases (WandB)** for experiment tracking, including loss curves, metric visualization, and checkpoint logging. If you're running the training scripts yourself, make sure to log into WandB first:
+
+```bash
+wandb login
+```
+
+The specifics of the training for each model is detailed in [training.md](training.md).
+
 ---
 
 ## 📊 Results Summary
@@ -114,14 +115,14 @@ The specifics of the training for each model is detailed in [training.md](traini
 ├── src/                      # Code for experiments and models
     ├── models/                   # U-Net, Swin U-Net, Mamba U-Net architectures
         ├── unet.py                   # U-Net model pytorch implementation
-        ├── swin_unet.py              # Swin-Unet model pytorch implementation
-        ├── mamba_unet.py             # Mamba-Unet model pytorch implementation
+        ├── swin_unet.py              # Swin-UNet model pytorch implementation
+        ├── mamba_unet.py             # Mamba-UNet model pytorch implementation
         └── lightning_model.py        # General pytorch lightning segmentation model implementation
 
     ├── experiments/              # Experimental setup for all models
-        ├── e0_unet.py                # Experiment 0: Experimental setup for training and validating Unet
-        ├── e1_swin_unet.py           # Experiment 1: Experimental setup for training and validating Swin-Unet
-        └── e2_mamba_unet.py          # Experiment 2: Experimental setup for training and validating Mamba-Unet
+        ├── e0_unet.py                # Experiment 0: Experimental setup for training and validating UNet
+        ├── e1_swin_unet.py           # Experiment 1: Experimental setup for training and validating Swin-UNet
+        └── e2_mamba_unet.py          # Experiment 2: Experimental setup for training and validating Mamba-UNet
 
     ├── configuration.py          # Experimental hyperparameters and utility variables to train the models
     ├── data_loader.py            # Datamodules and dataloaders to load the training and validation data
@@ -157,11 +158,12 @@ This project is released under the MIT License.
 
 ### Code
 
-- Swin-Unet code and architecture: https://github.com/microsoft/Swin-Transformer  
-- Mamba-Unet code: https://github.com/ziyangwang007/Mamba-UNet 
+- UNet code: https://github.com/milesial/Pytorch-UNet
+- Swin-UNet code: https://github.com/microsoft/Swin-Transformer  
+- Mamba-UNet code: https://github.com/ziyangwang007/Mamba-UNet 
 
 ### Architectures
 
-- Unet architecture: https://arxiv.org/abs/1505.04597
-- Swin-Unet architecture: https://arxiv.org/abs/2105.05537
-- Mamba-Unet architecture: https://arxiv.org/abs/2402.05079
+- UNet architecture: https://arxiv.org/abs/1505.04597
+- Swin-UNet architecture: https://arxiv.org/abs/2105.05537
+- Mamba-UNet architecture: https://arxiv.org/abs/2402.05079

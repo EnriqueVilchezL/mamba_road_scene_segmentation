@@ -24,7 +24,7 @@ def main():
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
     from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
-    from models.swin_unet import SwinUnet
+    from models.swin_unet import SwinUNet
     from models.lightning_model import SegmentationModel
 
     from utils import get_device
@@ -76,7 +76,7 @@ def main():
         }
     )
 
-    swin = SwinUnet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    swin = SwinUNet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model = SegmentationModel.load_from_checkpoint(
         "results/swin_unet/swin_unet_model.pth.ckpt",
         model=swin,

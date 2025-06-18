@@ -276,8 +276,16 @@ class SymmetricFocalLoss(nn.Module):
 
     def forward(self, y_pred, y_true_onehot):
         cross_entropy = -y_true_onehot * torch.log(y_pred + self.epsilon)
+        # if torch.isnan(cross_entropy).any() == True:
+        #     print(f"Ce nan: {torch.isnan(cross_entropy).any()}")
+
         loss = self.delta * torch.pow(1 - y_pred, self.gamma) * cross_entropy
+        # if torch.isnan(loss).any() == True:
+        #     print(f"Ce loss nan: {torch.isnan(loss).any()}")
+
         loss += (1 - self.delta) * torch.pow(y_pred, self.gamma) * cross_entropy
+        # if torch.isnan(loss).any() == True:
+        #     print(f"Focal loss nan: {torch.isnan(loss).any()}")
         return loss.mean()
 
 class SymmetricFocalTverskyLoss(nn.Module):
@@ -290,14 +298,37 @@ class SymmetricFocalTverskyLoss(nn.Module):
     def forward(self, y_pred, y_true_onehot):
         # Flatten spatial dims: [B, C, H*W]
         y_pred_flat = y_pred.view(y_pred.size(0), y_pred.size(1), -1)
+
+        # if torch.isnan(y_pred_flat).any() == True:
+        #     print(f"Y_pred flat nan: {torch.isnan(y_pred_flat).any()}")
+
+        
         y_true_flat = y_true_onehot.view(y_true_onehot.size(0), y_true_onehot.size(1), -1)
 
+        # if torch.isnan(y_true_flat).any() == True:
+        #     print(f"Y_true flat nan: {torch.isnan(y_true_flat).any()}")
+
         true_pos = torch.sum(y_true_flat * y_pred_flat, dim=2)
+
+        # if torch.isnan(true_pos).any() == True:
+        #     print(f"True pos nan: {torch.isnan(true_pos).any()}")
         false_neg = torch.sum(y_true_flat * (1 - y_pred_flat), dim=2)
+
+        # if torch.isnan(false_neg).any() == True:
+        #     print(f"False neg nan: {torch.isnan(false_neg).any()}")
         false_pos = torch.sum((1 - y_true_flat) * y_pred_flat, dim=2)
 
+        # if torch.isnan(false_pos).any() == True:
+        #     print(f"False pos nan: {torch.isnan(false_pos).any()}")
+
         tversky = (true_pos + self.epsilon) / (true_pos + self.delta * false_neg + (1 - self.delta) * false_pos + self.epsilon)
-        loss = torch.pow(1 - tversky, self.gamma)
+        
+        # if torch.isnan(tversky).any() == True:
+        #     print(f"Tversky nan: {torch.isnan(tversky).any()}")
+        loss = torch.pow(torch.max(1 - tversky, torch.tensor(0)), self.gamma)
+
+        # if torch.isnan(loss).any() == True:
+        #     print(f"Tversky loss nan: {torch.isnan(loss).any()}")
         return loss.mean()
 
 class SymmetricUnifiedFocalLoss(nn.Module):
@@ -307,29 +338,54 @@ class SymmetricUnifiedFocalLoss(nn.Module):
       - y_pred: probabilities after softmax/sigmoid, shape [B, C, H, W]
       - y_true: class indices, shape [B, H, W]
     """
-    def __init__(self, weight=0.5, delta=0.6, gamma=0.5, num_classes=20, epochs=None):
+    def __init__(self, weight=0.5, delta=0.6, gamma=0.5, num_classes=20):
         super().__init__()
         self.weight = weight
         self.delta = delta
         self.gamma = gamma
         self.num_classes = num_classes
-        self.epsilon = 1e-7
+        self.epsilon = 1e-6
 
         self.focal = SymmetricFocalLoss(delta=delta, gamma=gamma, epsilon=self.epsilon)
         self.focal_tversky = SymmetricFocalTverskyLoss(delta=delta, gamma=gamma, epsilon=self.epsilon)
 
-    def forward(self, y_pred, y_true, epoch=None):
+    def forward(self, y_pred, y_true):
         if self.num_classes is None:
             self.num_classes = y_pred.size(1)
 
+        # print('y_pred max:', y_pred.max().item())
+        # print('y_pred min:', y_pred.min().item())
+        # print('y_pred mean:', y_pred.mean().item())
+        # print('Any NaN:', torch.isnan(y_pred).any().item())
+        # print('Any Inf:', torch.isinf(y_pred).any().item())
+
+        # if torch.isnan(y_pred).any() == True:
+        #     print(f"Y_pred nan: {torch.isnan(y_pred).any()}")
+        
+        # if torch.isnan(y_true).any() == True:
+        #     print(f"Y_true nan: {torch.isnan(y_true).any()}")
+
         # Apply softmax over channel dim to get probabilities
         y_pred_prob = torch.softmax(y_pred, dim=1)
+        pt = torch.clamp(y_pred_prob, min=self.epsilon, max=1.0 - self.epsilon)
+
+        # if torch.isnan(y_pred_prob).any() == True:
+        #     print(f"Softmax nan: {torch.isnan(y_pred_prob).any()}")
 
         # Convert y_true (class indices) to one-hot
         y_true_onehot = F.one_hot(y_true.long(), num_classes=self.num_classes)
         y_true_onehot = y_true_onehot.permute(0, 3, 1, 2).float()
 
-        focal_loss = self.focal(y_pred_prob, y_true_onehot)
-        focal_tversky_loss = self.focal_tversky(y_pred_prob, y_true_onehot)
+        # if torch.isnan(y_true_onehot).any() == True:
+        #     print(f"One shot nan: {torch.isnan(y_true_onehot).any()}")
+
+        focal_loss = self.focal(pt, y_true_onehot)
+        focal_tversky_loss = self.focal_tversky(pt, y_true_onehot)
+
+        # if torch.isnan(focal_loss).any() == True:
+        #     print(f"Final focal loss nan: {torch.isnan(focal_loss).any()}")
+
+        # if torch.isnan(focal_tversky_loss).any() == True:
+        #     print(f"Final tversky loss nan: {torch.isnan(focal_tversky_loss).any()}")
 
         return self.weight * focal_tversky_loss + (1 - self.weight) * focal_loss

@@ -23,7 +23,7 @@ def main():
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
     from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
-    from models.swin_unet import SwinUnet
+    from models.swin_unet import SwinUNet
     from models.lightning_model import SegmentationModel
 
     from utils import get_device, set_seed
@@ -75,14 +75,14 @@ def main():
         }
     )
 
-    swin = SwinUnet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    swin = SwinUNet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model = SegmentationModel(
         model=swin,
         lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
-        loss_fn=SymmetricUnifiedFocalLoss(epochs=config.EPOCHS),
+        loss_fn=SymmetricUnifiedFocalLoss(),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
 
@@ -96,13 +96,13 @@ def main():
 
     checkpoint_callback = ModelCheckpoint(
         monitor="val/loss",
-        dirpath=config.SWIN_RESULTS_PATH,
+        dirpath=config.SWIN_UNET_CHECKPOINT_PATH,
         filename=config.SWIN_UNET_FILENAME,
         save_top_k=config.TOP_K_SAVES,
         mode="min",
     )
 
-    id = "swin_unet_model_ufl_200"
+    id = "swin_unet_ufl_1000"
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
@@ -112,6 +112,20 @@ def main():
         log_every_n_steps=1,
     )
     trainer.fit(model, datamodule=datamodule)
+
+    # Test
+    swin = SwinUNet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    model = SegmentationModel.load_from_checkpoint(
+        config.SWIN_UNET_CHECKPOINT_PATH + "/" + config.SWIN_UNET_FILENAME,
+        model=swin,
+        lr=config.LR,
+        class_names=list(config.LABEL_MAP.values()),
+        metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
+        loss_fn=SymmetricUnifiedFocalLoss(),
+        scheduler_max_it=config.SCHEDULER_MAX_IT,
+    )
+
     trainer.test(model, datamodule=datamodule)
 
 if __name__ == "__main__":

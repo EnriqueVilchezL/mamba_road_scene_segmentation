@@ -24,7 +24,7 @@ def main():
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
     from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
-    from models.mamba_unet import MambaUnet
+    from models.mamba_unet import MambaUNet
     from models.lightning_model import SegmentationModel
 
     from utils import get_device
@@ -76,7 +76,7 @@ def main():
         }
     )
 
-    mamba = MambaUnet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    mamba = MambaUNet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model = SegmentationModel.load_from_checkpoint(
         "results/mamba_unet/checkpoints/mamba_unet_model.pth.ckpt",
         model=mamba,

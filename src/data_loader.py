@@ -135,7 +135,11 @@ class RandomCrop:
 
 class SegmentationTrainTransform:
     def __init__(self, image_size=(256, 256)):
-        self.image_resize = transforms.Resize((256,256))
+        self.image_resize = transforms.Compose(
+            [
+                transforms.Resize((256,256)),
+            ]
+        )
         self.image_transform = transforms.Compose(
             [
                 transforms.ColorJitter(0.2, 0.2, 0.2, 0.05),

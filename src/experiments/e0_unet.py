@@ -82,7 +82,7 @@ def main():
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
         vectorized_metrics=vectorized_metrics,
-        loss_fn=SymmetricUnifiedFocalLoss(epochs=config.EPOCHS),
+        loss_fn=SymmetricUnifiedFocalLoss(),
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     )
 
@@ -103,7 +103,7 @@ def main():
         mode="min",
     )
 
-    id = "unet_model_ufl_200"
+    id = "unet_ufl_1000"
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
@@ -111,8 +111,24 @@ def main():
         accelerator=device,
         callbacks=[checkpoint_callback, early_stop_callback],
         log_every_n_steps=1,
+        # gradient_clip_val=1,
+        # gradient_clip_algorithm="norm",
+        # detect_anomaly=True
     )
     trainer.fit(model, datamodule=datamodule)
+
+    # Test
+    unet = UNet(in_channels=3, num_classes=config.NUM_CLASSES)
+    model = SegmentationModel.load_from_checkpoint(
+        config.UNET_CHECKPOINT_PATH + "/" + config.UNET_FILENAME,
+        model=unet,
+        lr=config.LR,
+        class_names=list(config.LABEL_MAP.values()),
+        metrics=metrics,
+        vectorized_metrics=vectorized_metrics,
+        loss_fn=SymmetricUnifiedFocalLoss(),
+        scheduler_max_it=config.SCHEDULER_MAX_IT,
+    )
     trainer.test(model, datamodule=datamodule)
 
 

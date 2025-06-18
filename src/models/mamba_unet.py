@@ -857,9 +857,9 @@ class VSSM(nn.Module):
 
 logger = logging.getLogger(__name__)
 
-class MambaUnet(nn.Module):
+class MambaUNet(nn.Module):
     def __init__(self, img_size=224, num_classes=21843, in_channels=3, zero_head=False, vis=False):
-        super(MambaUnet, self).__init__()
+        super(MambaUNet, self).__init__()
         self.num_classes = num_classes
         self.zero_head = zero_head
 

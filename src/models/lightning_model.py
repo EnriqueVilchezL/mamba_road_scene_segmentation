@@ -49,7 +49,7 @@ class SegmentationModel(pl.LightningModule):
         # output: [B, num_classes, H, W]
         y_hat = self(x)
 
-        loss = self.loss_fn(y_hat, y, epoch=self.current_epoch)
+        loss = self.loss_fn(y_hat, y)
         return y, y_hat, loss
     
     def training_step(self, batch, batch_idx):

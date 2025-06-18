@@ -24,8 +24,8 @@ def main():
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
     from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
-    from models.mamba_unet import MambaUnet
-    from models.swin_unet import SwinUnet
+    from models.mamba_unet import MambaUNet
+    from models.swin_unet import SwinUNet
     from models.unet import UNet
     from models.lightning_model import SegmentationModel, EnsembleSegmentationModel
 
@@ -76,7 +76,7 @@ def main():
         }
     )
 
-    mamba = MambaUnet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    mamba = MambaUNet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model_mamba = SegmentationModel.load_from_checkpoint(
         "results/mamba_unet/checkpoints/mamba_unet_model.pth.ckpt",
         model=mamba,
@@ -88,7 +88,7 @@ def main():
         scheduler_max_it=config.SCHEDULER_MAX_IT,
     ).to(torch.device(device))
 
-    swin = SwinUnet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    swin = SwinUNet(img_size=config.SWIN_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
     model_swin = SegmentationModel.load_from_checkpoint(
         "results/swin_unet/swin_unet_model.pth.ckpt",
         model=swin,

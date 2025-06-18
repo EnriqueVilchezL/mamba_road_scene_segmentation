@@ -1015,9 +1015,9 @@ class SwinTransformerSys(nn.Module):
         return flops
 
 
-class SwinUnet(nn.Module):
+class SwinUNet(nn.Module):
     def __init__(self, img_size=224, num_classes=21843, zero_head=False, vis=False):
-        super(SwinUnet, self).__init__()
+        super(SwinUNet, self).__init__()
         self.num_classes = num_classes
         self.zero_head = zero_head
 
