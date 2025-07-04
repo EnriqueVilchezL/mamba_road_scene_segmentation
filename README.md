@@ -1,6 +1,6 @@
 # U-Net Variants for Semantic Segmentation in Autonomous Driving
 
-This project evaluates the performance of three semantic segmentation models — **U-Net**, **Swin U-Net**, and **Mamba U-Net** — in the context of **autonomous driving** using the **BDD100K semantic segmentation dataset**. The primary focus of this study is on **balanced accuracy** due to the **severe class imbalance** in the dataset.
+This project evaluates the performance of three semantic segmentation models — **U-Net**, **Swin U-Net**, **Mamba U-Net** and **HMT U-Net** — in the context of **autonomous driving** using the **BDD100K semantic segmentation dataset**.
 
 ---
 
@@ -43,28 +43,31 @@ LABEL_MAP = {
 
 The dataset presents a long-tail distribution, with common classes like "road" and "sky" dominating over rare ones like "train", "motorcycle", or "rider".
 
+This dataset has a severe class imbalance:
+
+![Pixel Count Bar Plot](imgs/class_imbalance.png)
+
 ---
 
 ## 🔍 Objective
 
 The goal is to compare architectural performance in handling imbalanced multi-class segmentation, particularly with regard to:
 
-- Balanced Accuracy
-- Accuracy
-- Mean IoU (mIoU)  
-- Class-wise Precision & Recall  
+- Pixel Accuracy (PA)
+- Mean Pixel Accuracy (mPA)
+- Mean IoU (mIoU)
+- Frames per second (FPS)
 
 ---
 
 ## 🧠 Models Compared
 
-| Model        | Architecture Highlights                                 |
-|--------------|----------------------------------------------------------|
-| U-Net        | Classic CNN-based encoder-decoder with skip connections |
-| Swin U-Net   | Transformer-based encoder (Swin Transformer) with hierarchical representations |
-| Mamba U-Net  | State Space Model-based encoder with long-range temporal dynamics |
-
-All models were trained under the same experimental setup for fair comparison.
+| Model        | Architecture Highlights                                 | Parameters |
+|--------------|----------------------------------------------------------| --------- |
+| U-Net        | Classic CNN-based encoder-decoder with skip connections | 31.0 M |
+| Swin U-Net   | Transformer-based encoder (Swin Transformer) with hierarchical representations | 27.2 M |
+| Mamba U-Net  | State Space Model-based encoder with long-range temporal dynamics | 19.1 M |
+| HMT U-Net  | Hybrid U-Net implementation with CNN, transformer and mamba blocks | 60.4 M |
 
 ---
 
@@ -94,18 +97,6 @@ The specifics of the training for each model is detailed in [training.md](traini
 
 ---
 
-## 📊 Results Summary
-
-> The testing results are:
-
-| Model        | Balanced Accuracy | mIoU | Notes |
-|--------------|-------------------|------|-------|
-| U-Net        | 0.64              | 0.52 | Strong on common classes, weak on rare |
-| Swin U-Net   | 0.68              | 0.57 | Better generalization to rare classes |
-| Mamba U-Net  | 0.71              | 0.59 | Best at capturing rare patterns due to long-range context |
-
----
-
 ## 📁 Directory Structure
 
 ```bash
@@ -113,16 +104,18 @@ The specifics of the training for each model is detailed in [training.md](traini
 ├── environment_unet.yml      # Conda environment definition  
 ├── data/                     # BDD100K Semantic Segmentation Dataset
 ├── src/                      # Code for experiments and models
-    ├── models/                   # U-Net, Swin U-Net, Mamba U-Net architectures
+    ├── models/                   # U-Net, Swin U-Net, Mamba U-Net, HMT U-Net architectures
         ├── unet.py                   # U-Net model pytorch implementation
-        ├── swin_unet.py              # Swin-UNet model pytorch implementation
-        ├── mamba_unet.py             # Mamba-UNet model pytorch implementation
+        ├── swin_unet.py              # Swin U-Net model pytorch implementation
+        ├── mamba_unet.py             # Mamba U-Net model pytorch implementation
+        ├── hmt_unet.py               # HMT U-Net model pytorch implementation
         └── lightning_model.py        # General pytorch lightning segmentation model implementation
 
     ├── experiments/              # Experimental setup for all models
-        ├── e0_unet.py                # Experiment 0: Experimental setup for training and validating UNet
-        ├── e1_swin_unet.py           # Experiment 1: Experimental setup for training and validating Swin-UNet
-        └── e2_mamba_unet.py          # Experiment 2: Experimental setup for training and validating Mamba-UNet
+        ├── e0_unet.py                # Experiment 0: Experimental setup for training and validating U-Net
+        ├── e1_swin_unet.py           # Experiment 1: Experimental setup for training and validating Swin U-Net
+        ├── e2_mamba_unet.py          # Experiment 2: Experimental setup for training and validating Mamba U-Net
+        └── e3_hmt_unet.py            # Experiment 2: Experimental setup for training and validating HMT U-Net
 
     ├── configuration.py          # Experimental hyperparameters and utility variables to train the models
     ├── data_loader.py            # Datamodules and dataloaders to load the training and validation data
@@ -132,15 +125,6 @@ The specifics of the training for each model is detailed in [training.md](traini
 
 └── README.md  
 ```
-
----
-
-## 🚀 Future Work
-
-- Test model's suitability for real time
-- Extend comparison to video segmentation tasks  
-- Explore hybrid architectures (e.g., Swin + Mamba fusion)  
-- Explore other datasets
 
 ---
 
@@ -158,12 +142,11 @@ This project is released under the MIT License.
 
 ### Code
 
-- UNet code: https://github.com/milesial/Pytorch-UNet
-- Swin-UNet code: https://github.com/microsoft/Swin-Transformer  
-- Mamba-UNet code: https://github.com/ziyangwang007/Mamba-UNet 
+- Swin U-Net code: https://github.com/microsoft/Swin-Transformer  
+- Mamba U-Net code: https://github.com/ziyangwang007/Mamba-UNet 
 
 ### Architectures
 
-- UNet architecture: https://arxiv.org/abs/1505.04597
-- Swin-UNet architecture: https://arxiv.org/abs/2105.05537
-- Mamba-UNet architecture: https://arxiv.org/abs/2402.05079
+- U-Net architecture: https://arxiv.org/abs/1505.04597
+- Swin U-Net architecture: https://arxiv.org/abs/2105.05537
+- Mamba U-Net architecture: https://arxiv.org/abs/2402.05079

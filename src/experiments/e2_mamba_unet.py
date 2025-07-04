@@ -15,23 +15,23 @@ def main():
         if path not in sys.path:
             sys.path.insert(0, path)
 
-    import torch.nn as nn
-    import torch
     from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
     from pytorch_lightning.loggers import WandbLogger
     from pytorch_lightning import Trainer
     from torchmetrics import MetricCollection
     from torchmetrics.classification import MulticlassAccuracy, MulticlassJaccardIndex
 
-    from data_loader import SegmentationDataModule, SegmentationTrainTransform, SegmentationTestTransform
+    from data_loader import (
+        SegmentationDataModule,
+        SegmentationTrainTransform,
+        SegmentationValTransform,
+    )
     from models.mamba_unet import MambaUNet
     from models.lightning_model import SegmentationModel
 
     from utils import get_device, set_seed
-    from loss import CombinedLoss, SymmetricUnifiedFocalLoss
+    from loss import SymmetricUnifiedFocalLoss
     import configuration as config
-    import torch
-    import wandb
 
     # Get the available device
     device = get_device()
@@ -42,41 +42,34 @@ def main():
         batch_size=config.BATCH_SIZE,
         data_path=config.DATA_PATH,
         num_classes=config.NUM_CLASSES,
-        train_transform=SegmentationTrainTransform(
-            image_size=config.MAMBA_IMAGE_SIZE
-        ),
-        test_transform=SegmentationTestTransform(
-            image_size=config.MAMBA_IMAGE_SIZE
-        ),
+        train_transform=SegmentationTrainTransform(image_size=config.MAMBA_IMAGE_SIZE),
+        val_transform=SegmentationValTransform(image_size=config.MAMBA_IMAGE_SIZE),
+        test_transform=SegmentationValTransform(image_size=config.MAMBA_IMAGE_SIZE),
         num_workers=config.NUM_WORKERS,
     )
     datamodule.setup()
 
     metrics = MetricCollection(
         {
-            "Accuracy": MulticlassAccuracy(
-                num_classes=config.NUM_CLASSES, average="micro"
-            ),
-            "BalancedAccuracy": MulticlassAccuracy(
-                num_classes=config.NUM_CLASSES, average="macro"
-            ),
-            "IoU": MulticlassJaccardIndex(
+            "PA": MulticlassAccuracy(num_classes=config.NUM_CLASSES, average="micro"),
+            "mPA": MulticlassAccuracy(num_classes=config.NUM_CLASSES, average="macro"),
+            "mIoU": MulticlassJaccardIndex(
                 num_classes=config.NUM_CLASSES, average="macro"
             ),
         }
     )
     vectorized_metrics = MetricCollection(
         {
-            "PerClassAccuracy": MulticlassAccuracy(
-                num_classes=config.NUM_CLASSES, average="none"
-            ),
-            "PerClassIoU": MulticlassJaccardIndex(
+            "PA": MulticlassAccuracy(num_classes=config.NUM_CLASSES, average="none"),
+            "IoU": MulticlassJaccardIndex(
                 num_classes=config.NUM_CLASSES, average="none"
             ),
         }
     )
 
-    mamba = MambaUNet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    mamba = MambaUNet(
+        img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES
+    )
     model = SegmentationModel(
         model=mamba,
         lr=config.LR,
@@ -103,7 +96,7 @@ def main():
         mode="min",
     )
 
-    id = "mamba_unet_ufl_1000"
+    id = "mamba_unet_final"
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
@@ -115,9 +108,11 @@ def main():
     trainer.fit(model, datamodule=datamodule)
 
     # Test
-    mamba = MambaUNet(img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES)
+    mamba = MambaUNet(
+        img_size=config.MAMBA_IMAGE_SIZE[0], num_classes=config.NUM_CLASSES
+    )
     model = SegmentationModel.load_from_checkpoint(
-        config.MAMBA_UNET_CHECKPOINT_PATH + "/" + config.MAMBA_UNET_FILENAME,
+        config.MAMBA_UNET_CHECKPOINT_PATH + "/" + config.MAMBA_UNET_FILENAME + ".ckpt",
         model=mamba,
         lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
@@ -131,4 +126,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,3 +1,4 @@
+# sin filtro
 def main():
     import os
     import sys
@@ -25,7 +26,7 @@ def main():
         SegmentationTrainTransform,
         SegmentationValTransform,
     )
-    from models.unet import UNet
+    from models.hmt_unet import HMTUNet
     from models.lightning_model import SegmentationModel
 
     from utils import get_device, set_seed
@@ -41,9 +42,9 @@ def main():
         batch_size=config.BATCH_SIZE,
         data_path=config.DATA_PATH,
         num_classes=config.NUM_CLASSES,
-        train_transform=SegmentationTrainTransform(image_size=config.UNET_IMAGE_SIZE),
-        val_transform=SegmentationValTransform(image_size=config.UNET_IMAGE_SIZE),
-        test_transform=SegmentationValTransform(image_size=config.UNET_IMAGE_SIZE),
+        train_transform=SegmentationTrainTransform(image_size=config.HMT_IMAGE_SIZE),
+        val_transform=SegmentationValTransform(image_size=config.HMT_IMAGE_SIZE),
+        test_transform=SegmentationValTransform(image_size=config.HMT_IMAGE_SIZE),
         num_workers=config.NUM_WORKERS,
     )
     datamodule.setup()
@@ -66,9 +67,11 @@ def main():
         }
     )
 
-    unet = UNet(in_channels=3, num_classes=config.NUM_CLASSES)
+    hybrid = HMTUNet(
+        num_classes=config.NUM_CLASSES, resolution=config.HMT_IMAGE_SIZE[0]
+    )
     model = SegmentationModel(
-        model=unet,
+        model=hybrid,
         lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,
@@ -87,13 +90,13 @@ def main():
 
     checkpoint_callback = ModelCheckpoint(
         monitor="val/loss",
-        dirpath=config.UNET_CHECKPOINT_PATH,
-        filename=config.UNET_FILENAME,
+        dirpath=config.HMT_UNET_CHECKPOINT_PATH,
+        filename=config.HMT_UNET_FILE_NAME,
         save_top_k=config.TOP_K_SAVES,
         mode="min",
     )
 
-    id = "unet_final_original"
+    id = "hmt_unet_final"
     wandb_logger = WandbLogger(project=config.WANDB_PROJECT, id=id, resume="allow")
     trainer = Trainer(
         logger=wandb_logger,
@@ -105,10 +108,12 @@ def main():
     trainer.fit(model, datamodule=datamodule)
 
     # Test
-    unet = UNet(in_channels=3, num_classes=config.NUM_CLASSES)
+    hybrid = HMTUNet(
+        num_classes=config.NUM_CLASSES, resolution=config.HMT_IMAGE_SIZE[0]
+    )
     model = SegmentationModel.load_from_checkpoint(
-        config.UNET_CHECKPOINT_PATH + "/" + config.UNET_FILENAME + ".ckpt",
-        model=unet,
+        config.HMT_UNET_CHECKPOINT_PATH + "/" + config.HMT_UNET_FILE_NAME + ".ckpt",
+        model=hybrid,
         lr=config.LR,
         class_names=list(config.LABEL_MAP.values()),
         metrics=metrics,

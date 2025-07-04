@@ -781,7 +781,7 @@ class SwinTransformerSys(nn.Module):
         num_classes=1000,
         embed_dim=96,
         depths=[2, 2, 2, 2],
-        depths_decoder=[1, 2, 2, 2],
+        depths_decoder=[2, 2, 2, 2],
         num_heads=[3, 6, 12, 24],
         window_size=7,
         mlp_ratio=4.0,
@@ -1069,4 +1069,3 @@ class SwinUNet(nn.Module):
             # print(msg)
         else:
             print("none pretrain")
-

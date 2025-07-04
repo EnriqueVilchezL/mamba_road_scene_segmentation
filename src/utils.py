@@ -19,6 +19,9 @@ def get_device():
     return device
 
 def set_seed(seed: int = 42):
+    """
+    Sets the random seed for reproducibility across various libraries.
+    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)

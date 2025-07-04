@@ -1,5 +1,5 @@
 from captum.attr import Saliency, FeatureAblation
-import torch
+
 def get_segmentation_saliency(model, image, mask, target_class):
     """
     Compute saliency map for a given image and target_class in a segmentation model.
